@@ -1,100 +1,177 @@
 package org.hivebyte.airlinereservationsystem.controller;
 
-import org.hivebyte.airlinereservationsystem.entity.Flight;
-import org.hivebyte.airlinereservationsystem.exceptionhandling.FlightNotFoundException;
+import org.hivebyte.airlinereservationsystem.bean.Flight;
+import org.hivebyte.airlinereservationsystem.bean.Route;
+import org.hivebyte.airlinereservationsystem.exception.RouteException;
+import org.hivebyte.airlinereservationsystem.repository.AirportRepository;
 import org.hivebyte.airlinereservationsystem.repository.FlightRepository;
+import org.hivebyte.airlinereservationsystem.repository.RouteRepository;
+import org.hivebyte.airlinereservationsystem.service.AirportService;
 import org.hivebyte.airlinereservationsystem.service.FlightService;
-import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
+import org.hivebyte.airlinereservationsystem.service.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Optional;
 
-
-@CrossOrigin(origins = "http://localhost:4200")
-@RestController
-@RequestMapping("/api/fly")
+@Controller
 public class FlightController {
-	@Autowired
-	private FlightService flightService;
-	
-	@Autowired
-	private FlightRepository flightRepository;
 
-	public FlightController(FlightService flightService) {
-		super();
-		this.flightService = flightService;
-	}
+    @Autowired
+    private FlightService flightService;
 
-	@PostMapping("/flights") // create
-	public ResponseEntity<Flight> addFlight(@Valid @RequestBody Flight flight){
-		flight.setFlightId(0);
-		Flight newFlight = flightService.save(flight);
-		return ResponseEntity.status(HttpStatus.CREATED).body(newFlight);
-	}
+    @Autowired
+    private RouteService routeService;
 
-	@GetMapping("/flights/{flightId}")  // read
-	public Flight findById(@PathVariable("flightId") int  flightId) throws FlightNotFoundException {
-		Flight flight = flightService.findById(flightId);
-		return flight;
-	}
-	
-	
-	@GetMapping("/flights/flightNum/{flightNumber}")  // read
-	public List<Flight> findByFlightNumber(@PathVariable String  flightNumber) throws FlightNotFoundException {
-		List<Flight> flight = flightRepository.findByFlightNumber(flightNumber);
-		return flight;
-	}
-	
-	@GetMapping("/flights/source/{source}")  // read
-	public List<Flight> findBySource(@PathVariable String source) throws FlightNotFoundException {
-		List<Flight> flight = flightService.findBySource(source);
-		return flight;
-	}
-	
-	@GetMapping("/flights/destination/{destination}")  // read
-	public List<Flight> findByDestination(@PathVariable String destination) throws FlightNotFoundException {
-		List<Flight> flight = flightService.findByDestination(destination);
-		return flight;
-	}
-	
-	@GetMapping("/flights/{source}/{destination}")
-	public List<Flight> findBySoureDestination(@PathVariable("source") String source,@PathVariable("destination") String destination) {
-		
-		List<Flight> flight = flightRepository.findBySourceDestination(source,destination);
-		return flight;
-	}
-	
-	@GetMapping("/flights")
-	public List<Flight> findAllFlights()
-	{
-		return flightService.findAll();
-	}
-	
-	@PutMapping("/flights") // update 
-	public ResponseEntity<Flight> updateFlight(@Valid @RequestBody Flight flight){
-		Flight newFlight = flightService.save(flight);
-		return ResponseEntity.status(HttpStatus.CREATED).body(newFlight);
-	}
+    @Autowired
+    private AirportService airportService;
 
-	@DeleteMapping("flights/{flightId}") // delete
-	public String deleteById(@PathVariable  int flightId) throws FlightNotFoundException {
-		flightService.deleteById(flightId);
-		return " Flight with Id "+flightId+" is  Deleted Successfully ....";
-	}
-	
-	@Transactional
-	@DeleteMapping("flights/flightNum/{flightNumber}")
-	public String deleteByFlightNumber(@PathVariable String flightNumber) throws FlightNotFoundException
-	{
-		flightRepository.deleteByFlightNumber(flightNumber);
-		return "Flight with Number"+flightNumber+" is deleted Successfully...";
-	}
-	
+    @Autowired
+    private RouteRepository routeRepository;
+
+    @Autowired
+    private AirportRepository airportRepository;
+
+    @Autowired
+    private FlightRepository flightRepository;
+
+    @GetMapping("/addFlight")
+    public String showAddFlightForm(Model model) {
+        model.addAttribute("flight", new Flight());
+        model.addAttribute("routes", routeService.getAllRoutes());
+        return "addFlight";
+    }
+
+    @PostMapping("/addFlight")
+    public String addFlight(@ModelAttribute("flight") Flight flight,
+                            @RequestParam("returnDeparture") String returnDeparture,
+                            @RequestParam("returnArrival") String returnArrival,
+                            Model model) {
+        try {
+            List<Flight> flights = flightService.addFlight(flight, returnDeparture, returnArrival);
+            model.addAttribute("successMessage", "Flight added successfully.");
+            model.addAttribute("flight", new Flight()); // Reset the form
+            model.addAttribute("routes", routeService.getAllRoutes());
+            model.addAttribute("flights", flights);
+            return "addFlight";
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("routes", routeService.getAllRoutes());
+            return "addFlight";
+        }
+    }
+
+    @GetMapping("/flights")
+    public String getAllFlights(Model model) {
+        model.addAttribute("flights", flightService.getAllFlights());
+        return "flightList";
+    }
+
+    @GetMapping("/viewFlight")
+    public String viewFlights(Model model) {
+        List<Flight> flights = flightService.getAllFlights();
+        model.addAttribute("flights", flights);
+        return "viewFlight";
+    }
+
+    @GetMapping("/searchFlight")
+    public String searchFlight(Model model) {
+        model.addAttribute("airports", airportService.getAllAirports());
+        return "searchFlight";
+    }
+
+    @PostMapping("/searchFlightResult")
+    public String searchFlights(@RequestParam("fromCity") String fromCity,
+                                @RequestParam("toCity") String toCity,
+                                Model model) {
+        try {
+            String fromAirportCode = airportRepository.findAirportCodeByLocation(fromCity);
+            String toAirportCode = airportRepository.findAirportCodeByLocation(toCity);
+
+            if (fromAirportCode == null || toAirportCode == null) {
+                throw new RouteException("Invalid airport location(s) provided.");
+            }
+
+            if (fromAirportCode.equalsIgnoreCase(toAirportCode)) {
+                throw new RouteException("From-city & To-City cannot be the same.");
+            }
+
+            Optional<Route> optionalRoute = routeRepository.findBySourceAirportCodeAndDestinationAirportCode(fromAirportCode, toAirportCode);
+            if (!optionalRoute.isPresent()) {
+                throw new RouteException("Route not found between the specified cities.");
+            }
+
+            Route route = optionalRoute.get();
+            List<Flight> flightList = flightRepository.findByRouteId(route.getRouteId());
+
+            if (flightList.isEmpty()) {
+                model.addAttribute("errorMessage", "No flights found for the selected route.");
+                return "searchFlight";
+            }
+
+            model.addAttribute("flightList", flightList);
+            model.addAttribute("fromAirport", fromCity);
+            model.addAttribute("toAirport", toCity);
+            model.addAttribute("fare", route.getFare());
+            return "searchFlightResult";
+
+        } catch (RouteException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("airports", airportService.getAllAirports());
+            return "searchFlight";
+        }
+    }
+
+    
+    @GetMapping("/modifyFlight")
+    public String showModifyFlightPage(@RequestParam("flightNumber") Long flightNumber, Model model) {
+        Optional<Flight> flight = flightService.getFlightByNumber(flightNumber);
+        if (flight.isPresent()) {
+            model.addAttribute("flight", flight.get());
+            return "modifyFlight";
+        } else {
+            return "redirect:/viewFlight";
+        }
+    }
+
+    @PostMapping("/updateFlight")
+    public String updateFlight(@RequestParam("flightNumber") Long flightNumber,
+                               @RequestParam("departure") String departure,
+                               @RequestParam("arrival") String arrival,
+                               Model model) {
+        Optional<Flight> flightOpt = flightService.getFlightByNumber(flightNumber);
+        if (flightOpt.isPresent()) {
+            Flight flight = flightOpt.get();
+            flight.setDeparture(departure);
+            flight.setArrival(arrival);
+            flightService.updateFlight(flight);
+            return "redirect:/viewFlight";
+        } else {
+            return "redirect:/viewFlight";
+        }
+    }
+    
+    @GetMapping("/cancelFlight")
+    public String showCancelFlightForm(@RequestParam Long flightNumber, Model model) {
+        model.addAttribute("flightNumber", flightNumber);
+        return "cancelFlight";
+    }
+
+    @PostMapping("/cancelFlight")
+    public String cancelFlight(@RequestParam Long flightNumber, Model model) {
+        try {
+            flightService.cancelFlight(flightNumber);
+            model.addAttribute("message", "Flight canceled successfully");
+            return "redirect:/viewFlight";
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", e.getMessage());
+            return "error";
+        }
+    }
 }
-
-
-
