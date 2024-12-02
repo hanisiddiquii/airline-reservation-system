@@ -1,24 +1,27 @@
 package org.hivebyte.airlinereservationsystem.repository;
 
-import org.hivebyte.airlinereservationsystem.entity.Flight;
+import org.hivebyte.airlinereservationsystem.bean.Flight;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
+public interface FlightRepository extends JpaRepository<Flight, Long> {
 
-public interface FlightRepository extends JpaRepository<Flight, Integer>{
-	
-	@Query("select f from Flight f where f.destination = :destination")
-	public List<Flight> findByDestination(String destination);
-	
-	@Query("select f from Flight f where f.source = :source")
-	public List<Flight> findBySource(String source);
+    boolean existsByCarrierNameAndFlightNumber(String carrierName, Long flightNumber);
 
-	@Query("select f from Flight f where f.source = :source and f.destination = :destination")
-	public List<Flight> findBySourceDestination(String source,String destination);
-	
-	public List<Flight> findByFlightNumber(String flightNumber);
-	
-	public void deleteByFlightNumber(String flightNumber);
+    List<Flight> findByRouteId(Long routeId);
+
+    List<Flight> findByDepartureAndArrival(String departure, String arrival);
+    
+    @Query("SELECT f FROM Flight f JOIN Route r ON f.routeId = r.routeId WHERE r.sourceAirport = :fromCity AND r.destinationAirport = :toCity")
+    List<Flight> findByRoute(String fromCity, String toCity);
+    
+	Flight findByFlightNumber(Long flightNumber);
+	Flight findFlightByFlightNumber(Long flightNumber);
+    
+    
+    
 }
