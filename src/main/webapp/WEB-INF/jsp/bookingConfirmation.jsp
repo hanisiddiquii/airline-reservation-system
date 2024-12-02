@@ -147,6 +147,6 @@
         </table>
         <a href="/cindex" class="home-button">Return to Home</a>
     </div>
-    <footer>Flight Management System @ Infosys Springboard</footer>
+    <footer>Airline Reservation System </footer>
 </body>
 </html>

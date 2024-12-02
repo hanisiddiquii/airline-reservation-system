@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Flight Management System - Home</title>
+    <title>Airline Reservation System - Home</title>
     <style>
         body {
             font-family: Arial, sans-serif;

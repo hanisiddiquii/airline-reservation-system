@@ -84,6 +84,6 @@
         <p class="message">${message}</p>
         <a href="viewRoute" class="home-button">Back to Routes</a>
     </div>
-    <footer>Flight Management System @ Infosys Springboard</footer>
+    <footer>Airline Reservation System </footer>
 </body>
 </html>

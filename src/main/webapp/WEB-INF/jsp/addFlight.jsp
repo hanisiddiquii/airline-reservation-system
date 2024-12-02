@@ -214,6 +214,6 @@
         </c:if>
     </div>
     <button class="home-button" onclick="location.href='${pageContext.request.contextPath}/aindex'">Return to Home</button>
-    <footer>Flight Management System @ Infosys Springboard</footer>
+    <footer>Airline Reservation System </footer>
 </body>
 </html>

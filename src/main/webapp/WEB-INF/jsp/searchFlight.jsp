@@ -144,7 +144,7 @@
         </form>
         <button class="home-button" onclick="location.href='${pageContext.request.contextPath}/cindex'">Return</button>
     </div>
-    <footer>Flight Management System @ Infosys Springboard</footer>
+    <footer>Airline Reservation System </footer>
     
     <c:if test="${not empty errorMessage}">
         <div class="error-message">${errorMessage}</div>
